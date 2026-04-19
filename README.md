@@ -44,6 +44,28 @@ curl http://localhost:8000/health
 
 You should see `{"status":"ok","db":"ok"}` when Postgres is reachable.
 
+### Phase 2 (LLM + chat)
+
+After pulling new migrations:
+
+```powershell
+poetry run alembic upgrade head
+```
+
+Endpoints:
+
+- `POST /chat` — body `{ "message": "...", "stream": true|false, "conversation_id": "<uuid optional>" }`. SSE events: `token`, `done`, `error`, `heartbeat` (every 15s).
+- `GET /conversations` — recent conversations.
+- `GET /conversations/{id}/messages` — ordered history.
+
+Manual smoke (server running):
+
+```powershell
+poetry run python scripts/chat_cli.py --once "say hello"
+```
+
+Set `GROQ_API_KEY` (and optional `GROQ_CHAT_MODEL`) for Groq, or `GEMINI_API_KEY` with `LLM_PROVIDER=gemini`. Tests default `ATLAS_USE_FAKE_LLM=1` in `tests/conftest.py` so CI does not call external LLMs.
+
 ## Quality gate (no Make)
 
 ```powershell

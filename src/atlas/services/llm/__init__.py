@@ -5,6 +5,7 @@ import os
 from atlas.config import Settings, get_settings
 from atlas.services.llm.base import LLMProvider
 from atlas.services.llm.gemini import GeminiProvider
+from atlas.services.llm.groq import GroqProvider
 
 _provider: LLMProvider | None = None
 
@@ -24,6 +25,16 @@ def build_llm(settings: Settings) -> LLMProvider:
             api_key=settings.gemini_api_key,
             chat_model=settings.gemini_chat_model,
             embedding_model=settings.gemini_embedding_model,
+            max_context=settings.gemini_max_context_tokens,
+        )
+    if provider == "groq":
+        if not settings.groq_api_key.strip():
+            msg = "GROQ_API_KEY is required when LLM_PROVIDER=groq"
+            raise ValueError(msg)
+        return GroqProvider(
+            api_key=settings.groq_api_key,
+            model=settings.groq_chat_model,
+            base_url=settings.groq_base_url,
             max_context=settings.gemini_max_context_tokens,
         )
     if provider == "claude":
@@ -54,6 +65,7 @@ def reset_llm_for_tests() -> None:
 
 __all__ = [
     "GeminiProvider",
+    "GroqProvider",
     "LLMProvider",
     "build_llm",
     "get_llm",

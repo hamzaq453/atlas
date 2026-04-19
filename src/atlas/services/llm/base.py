@@ -19,10 +19,10 @@ class LLMProvider(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def stream(self, messages: list[Message], **opts: Any) -> AsyncIterator[LLMChunk]:
-        raise NotImplementedError
-        yield  # pragma: no cover
-
-    @abstractmethod
     async def embed(self, texts: list[str]) -> list[list[float]]:
         raise NotImplementedError
+
+    async def stream(self, messages: list[Message], **opts: Any) -> AsyncIterator[LLMChunk]:
+        """Default non-streaming fallback: one chunk from `complete`."""
+        response = await self.complete(messages, **opts)
+        yield LLMChunk(delta=response.content, finish_reason="STOP", usage=response.usage)

@@ -7,11 +7,12 @@ def test_settings_loads_required_urls() -> None:
     settings = Settings(
         database_url="postgresql+asyncpg://atlas:atlas_dev@localhost:5432/atlas_dev",
         test_database_url="postgresql+asyncpg://atlas:atlas_dev@localhost:5432/atlas_test",
+        llm_provider="groq",
     )
 
     assert "atlas_dev" in settings.database_url
     assert "atlas_test" in settings.test_database_url
-    assert settings.llm_provider == "gemini"
+    assert settings.llm_provider == "groq"
     assert settings.env == "local"
     assert settings.timezone == "Asia/Karachi"
 

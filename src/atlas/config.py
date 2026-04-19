@@ -40,8 +40,18 @@ class Settings(BaseSettings):
         default=1_048_576,
         description="Approximate max context window for truncation heuristics.",
     )
-    llm_provider: Literal["gemini", "claude", "openai"] = Field(
-        default="gemini",
+    groq_api_key: str = Field(default="", description="Groq API key when LLM_PROVIDER=groq.")
+    groq_base_url: str = Field(
+        default="https://api.groq.com/openai/v1",
+        description="Groq OpenAI-compatible base URL.",
+    )
+    groq_chat_model: str = Field(
+        default="qwen/qwen3-32b",
+        description="Groq chat model id.",
+    )
+
+    llm_provider: Literal["gemini", "groq", "claude", "openai"] = Field(
+        default="groq",
         description="LLM provider id (Phase 2+).",
     )
     log_level: str = Field(default="INFO")

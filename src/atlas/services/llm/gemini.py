@@ -5,8 +5,9 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any, cast
 
-import google.generativeai as genai  # type: ignore[import-untyped]
+import google.generativeai as genai
 
+from atlas.services.llm.base import LLMProvider
 from atlas.services.llm.types import LLMChunk, LLMResponse, Message, ToolCall
 
 _SENTINEL = object()
@@ -84,7 +85,7 @@ def _extract_tool_calls_from_candidate(candidate: Any) -> list[ToolCall]:
     return calls
 
 
-class GeminiProvider:
+class GeminiProvider(LLMProvider):
     name = "gemini"
 
     def __init__(
