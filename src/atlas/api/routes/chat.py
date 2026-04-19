@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -25,7 +26,7 @@ async def post_chat(
 
     if body.stream:
 
-        async def event_stream():
+        async def event_stream() -> AsyncIterator[str]:
             async for chunk in stream_chat_sse(
                 session,
                 llm,

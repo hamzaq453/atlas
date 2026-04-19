@@ -5,7 +5,7 @@ import json
 from collections.abc import AsyncIterator
 from typing import Any, cast
 
-import google.generativeai as genai
+import google.generativeai as genai  # type: ignore[import-untyped]
 
 from atlas.services.llm.types import LLMChunk, LLMResponse, Message, ToolCall
 
@@ -95,7 +95,7 @@ class GeminiProvider:
         embedding_model: str,
         max_context: int = 1_048_576,
     ) -> None:
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model = chat_model
         self._embedding_model = embedding_model
         self.max_context: int = max_context
@@ -105,7 +105,7 @@ class GeminiProvider:
         generation_config = opts.get("generation_config")
 
         def _run() -> LLMResponse:
-            model = genai.GenerativeModel(
+            model = genai.GenerativeModel(  # type: ignore[attr-defined]
                 self.model,
                 system_instruction=system_instruction,
             )
@@ -140,7 +140,7 @@ class GeminiProvider:
         generation_config = opts.get("generation_config")
 
         def _build_iterator() -> Any:
-            model = genai.GenerativeModel(
+            model = genai.GenerativeModel(  # type: ignore[attr-defined]
                 self.model,
                 system_instruction=system_instruction,
             )
@@ -181,7 +181,7 @@ class GeminiProvider:
         vectors: list[list[float]] = []
 
         def _embed_one(text: str) -> list[float]:
-            result = genai.embed_content(
+            result = genai.embed_content(  # type: ignore[attr-defined]
                 model=self._embedding_model,
                 content=text,
                 task_type="retrieval_document",
