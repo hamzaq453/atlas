@@ -7,25 +7,20 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from atlas.api.deps import get_db
+from atlas.api.deps import get_db, get_llm_dep
 from atlas.api.schemas.chat import ChatRequest
 from atlas.config import get_settings
 from atlas.services.chat_service import run_json_chat, stream_chat_sse
-from atlas.services.llm import get_llm
 from atlas.services.llm.base import LLMProvider
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-async def _llm_dep() -> LLMProvider:
-    return get_llm()
-
-
-@router.post("", summary="Send a chat message (SSE or JSON)")
+@router.post("", summary="Send a chat message (SSE or JSON)", response_model=None)
 async def post_chat(
     body: ChatRequest,
     session: Annotated[AsyncSession, Depends(get_db)],
-    llm: Annotated[LLMProvider, Depends(_llm_dep)],
+    llm: Annotated[LLMProvider, Depends(get_llm_dep)],
 ) -> StreamingResponse | JSONResponse:
     settings = get_settings()
 

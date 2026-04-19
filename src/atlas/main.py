@@ -6,16 +6,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from atlas.api.routes import health
+from atlas.api.routes import chat, conversations, health
 from atlas.config import get_settings
 from atlas.logging import setup_logging
+from atlas.services.llm import init_llm, reset_llm_for_tests
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     setup_logging(json_logs=settings.env == "prod", log_level=settings.log_level)
+    init_llm(settings)
     yield
+    reset_llm_for_tests()
 
 
 def create_app() -> FastAPI:
@@ -28,6 +31,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(health.router)
+    app.include_router(chat.router)
+    app.include_router(conversations.router)
     return app
 
 

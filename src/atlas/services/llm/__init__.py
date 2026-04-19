@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from atlas.config import Settings, get_settings
 from atlas.services.llm.base import LLMProvider
 from atlas.services.llm.gemini import GeminiProvider
@@ -8,6 +10,11 @@ _provider: LLMProvider | None = None
 
 
 def build_llm(settings: Settings) -> LLMProvider:
+    if os.environ.get("ATLAS_USE_FAKE_LLM") == "1":
+        from atlas.services.llm.fake_provider import FakeLLM
+
+        return FakeLLM()
+
     provider = settings.llm_provider
     if provider == "gemini":
         if not settings.gemini_api_key.strip():

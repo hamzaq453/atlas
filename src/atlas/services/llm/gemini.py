@@ -98,7 +98,7 @@ class GeminiProvider:
         genai.configure(api_key=api_key)
         self.model = chat_model
         self._embedding_model = embedding_model
-        self.max_context = max_context
+        self.max_context: int = max_context
 
     async def complete(self, messages: list[Message], **opts: Any) -> LLMResponse:
         system_instruction, contents = _split_system_and_contents(messages)
@@ -154,7 +154,7 @@ class GeminiProvider:
 
         def _next_chunk() -> LLMChunk | object:
             try:
-                chunk = next(iterator)
+                return next(iterator)
             except StopIteration:
                 return _SENTINEL
             text = getattr(chunk, "text", "") or ""

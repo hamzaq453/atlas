@@ -14,6 +14,8 @@ from httpx import ASGITransport, AsyncClient
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(_REPO_ROOT / ".env", override=True)
 
+os.environ.setdefault("ATLAS_USE_FAKE_LLM", "1")
+
 _test_url = (
     os.environ.get("TEST_DATABASE_URL", "").strip()
     or os.environ.get("DATABASE_URL", "").strip()
@@ -29,15 +31,19 @@ os.environ.setdefault("LOG_LEVEL", "INFO")
 from atlas.config import get_settings
 from atlas.db import session as session_module
 from atlas.main import app
+from atlas.services.llm import init_llm, reset_llm_for_tests
 
 
 @pytest.fixture(autouse=True)
 def _reset_app_state() -> Generator[None, None, None]:
     get_settings.cache_clear()
+    reset_llm_for_tests()
     session_module._engine = None
     session_module._session_factory = None
+    init_llm(get_settings())
     yield
     get_settings.cache_clear()
+    reset_llm_for_tests()
     session_module._engine = None
     session_module._session_factory = None
 
