@@ -34,9 +34,7 @@ async def list_conversations(
     limit: int = 50,
 ) -> list[ConversationSummary]:
     stmt = (
-        select(Conversation)
-        .order_by(Conversation.updated_at.desc())
-        .limit(min(max(limit, 1), 200))
+        select(Conversation).order_by(Conversation.updated_at.desc()).limit(min(max(limit, 1), 200))
     )
     result = await session.execute(stmt)
     rows = list(result.scalars().all())

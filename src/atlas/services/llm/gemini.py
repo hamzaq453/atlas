@@ -116,13 +116,9 @@ class GeminiProvider:
             )
             text = (getattr(response, "text", None) or "").strip()
             tool_calls: list[ToolCall] = []
-            finish_reason: str | None = None
             for cand in getattr(response, "candidates", []) or []:
                 text = text or _extract_text_from_candidate(cand)
                 tool_calls.extend(_extract_tool_calls_from_candidate(cand))
-                fr = getattr(getattr(cand, "finish_reason", None), "name", None)
-                if isinstance(fr, str):
-                    finish_reason = fr
             usage: dict[str, Any] | None = None
             um = getattr(response, "usage_metadata", None)
             if um is not None:
@@ -148,13 +144,15 @@ class GeminiProvider:
                 self.model,
                 system_instruction=system_instruction,
             )
-            return iter(model.generate_content(contents, stream=True, generation_config=generation_config))
+            return iter(
+                model.generate_content(contents, stream=True, generation_config=generation_config)
+            )
 
         iterator = await asyncio.to_thread(_build_iterator)
 
         def _next_chunk() -> LLMChunk | object:
             try:
-                return next(iterator)
+                chunk = next(iterator)
             except StopIteration:
                 return _SENTINEL
             text = getattr(chunk, "text", "") or ""

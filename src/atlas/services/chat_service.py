@@ -4,17 +4,19 @@ import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from atlas.models.conversation import Conversation, ConversationMessage
 from atlas.services.llm.base import LLMProvider
-from atlas.services.llm.tokens import approximate_messages_token_count, truncate_messages_to_token_budget
+from atlas.services.llm.tokens import (
+    approximate_messages_token_count,
+    truncate_messages_to_token_budget,
+)
 from atlas.services.llm.types import Message, ToolCall
 from atlas.services.prompts.system import default_system_prompt
-
 
 DEFAULT_USER_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
 _STREAM_END = object()
@@ -33,7 +35,7 @@ async def get_or_create_conversation(
     conversation_id: uuid.UUID | None,
     user_message: str,
 ) -> Conversation:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if conversation_id is not None:
         conv = await session.get(Conversation, conversation_id)
         if conv is None:
@@ -107,7 +109,7 @@ async def persist_message(
     content: str,
     tool_calls_json: str | None = None,
 ) -> ConversationMessage:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     msg = ConversationMessage(
         conversation_id=conversation_id,
         role=role,
@@ -188,7 +190,7 @@ async def stream_chat_sse(
                     "message_id": str(saved.id),
                 },
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             await session.rollback()
             await queue.put({"type": "error", "message": str(exc)})
         finally:
