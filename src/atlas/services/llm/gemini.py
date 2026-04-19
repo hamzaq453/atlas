@@ -148,7 +148,7 @@ class GeminiProvider:
                 self.model,
                 system_instruction=system_instruction,
             )
-            return model.generate_content(contents, stream=True, generation_config=generation_config)
+            return iter(model.generate_content(contents, stream=True, generation_config=generation_config))
 
         iterator = await asyncio.to_thread(_build_iterator)
 

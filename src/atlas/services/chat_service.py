@@ -12,11 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from atlas.models.conversation import Conversation, ConversationMessage
 from atlas.services.llm.base import LLMProvider
 from atlas.services.llm.tokens import approximate_messages_token_count, truncate_messages_to_token_budget
-from atlas.services.llm.types import Message
+from atlas.services.llm.types import Message, ToolCall
 from atlas.services.prompts.system import default_system_prompt
 
 
 DEFAULT_USER_ID = uuid.UUID("00000000-0000-4000-8000-000000000001")
+_STREAM_END = object()
 
 
 def _title_from_message(text: str) -> str:
@@ -60,8 +61,6 @@ def _rows_to_messages(rows: list[ConversationMessage]) -> list[Message]:
             try:
                 raw = json.loads(row.tool_calls_json)
                 if isinstance(raw, list):
-                    from atlas.services.llm.types import ToolCall
-
                     tool_calls = [ToolCall.model_validate(item) for item in raw]
             except (json.JSONDecodeError, ValueError):
                 tool_calls = None
@@ -157,21 +156,11 @@ async def stream_chat_sse(
             )
             await session.commit()
 
-            await queue.put(
-                {
-                    "type": "meta",
-                    "conversation_id": str(conv.id),
-                },
-            )
-
             messages = await build_llm_messages(
                 session,
                 conversation_id=conv.id,
                 max_context_tokens=max_context_tokens,
             )
-            # Ensure the latest user turn is included even if truncation dropped older rows.
-            if not messages or messages[-1].role != "user" or messages[-1].content != user_text:
-                messages.append(Message(role="user", content=user_text))
 
             assistant_parts: list[str] = []
             async for chunk in llm.stream(messages):
@@ -203,10 +192,22 @@ async def stream_chat_sse(
             await session.rollback()
             await queue.put({"type": "error", "message": str(exc)})
         finally:
-            await queue.put(_SENTINEL_END)
+            await queue.put(_STREAM_END)
 
-
-_SENTINEL_END = object()
+    hb_task = asyncio.create_task(heartbeat())
+    prod_task = asyncio.create_task(producer())
+    try:
+        while True:
+            item = await queue.get()
+            if item is _STREAM_END:
+                break
+            if isinstance(item, dict):
+                yield f"data: {json.dumps(item, ensure_ascii=False)}\n\n"
+    finally:
+        done.set()
+        hb_task.cancel()
+        prod_task.cancel()
+        await asyncio.gather(hb_task, prod_task, return_exceptions=True)
 
 
 async def run_json_chat(
@@ -230,8 +231,6 @@ async def run_json_chat(
         conversation_id=conv.id,
         max_context_tokens=max_context_tokens,
     )
-    if not messages or messages[-1].role != "user" or messages[-1].content != user_text:
-        messages.append(Message(role="user", content=user_text))
 
     if approximate_messages_token_count(messages) > max_context_tokens:
         messages = truncate_messages_to_token_budget(
